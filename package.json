@@ -1,10 +1,15 @@
 {
-  "name": "ModClubProxy",
+  "name": "ddmm-mod-club-proxy",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
+    "abort-controller": "^3.0.0",
     "express": "^4.17.1",
+    "express-rate-limit": "^5.1.1",
     "node-fetch": "^2.6.0"
   }
 }
