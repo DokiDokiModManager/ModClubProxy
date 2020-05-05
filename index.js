@@ -74,4 +74,11 @@ app.get("/listing", (request, response) => {
     });
 });
 
+app.use((req, res) => {
+    res.status(404).send(`
+<p>This is a backend service for <a href="https://doki.space">Doki Doki Mod Manager</a>.</p>
+<p>The source code for this service is available on <a href="https://github.com/DokiDokiModManager/ModClubProxy">GitHub</a>.</p>
+`);
+});
+
 app.listen(8069);
