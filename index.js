@@ -1,23 +1,17 @@
 const fetch = require("node-fetch");
 const express = require("express");
-const rateLimit = require("express-rate-limit");
 const AbortController = require("abort-controller");
 
 const config = require("./config.json");
 
 const app = express();
 
-const UA = "DokiDokiModManager/ModClubProxy";
+const UA = "DDMM-ModClubProxy (zudo@doki.space)";
 
 app.use((request, response, next) => {
     response.set("Access-Control-Allow-Origin", "*");
     next();
 });
-
-app.use(rateLimit({
-    windowMs: 10 * 60 * 1000,
-    max: 20
-}));
 
 app.get("/testddl", (request, response) => {
     if (!request.query.id) {
