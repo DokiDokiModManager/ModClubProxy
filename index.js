@@ -13,7 +13,7 @@ app.use((request, response, next) => {
     next();
 });
 
-app.get("/testddl", (request, response) => {
+app.get("/mod", (request, response) => {
     if (!request.query.id) {
         response.status(400).json({"error": "invalid request"});
         return;
@@ -38,13 +38,13 @@ app.get("/testddl", (request, response) => {
                 const type = res2.headers.get("content-type");
 
                 response.json({
-                    url: res[0].modUploadURL,
+                    mod: res[0],
                     type,
                     downloadable: !!type.match(/^application\/.+/)
                 })
             }).catch(() => {
                 response.json({
-                    url: res[0].modUploadURL,
+                    mod: res[0],
                     type: "unknown",
                     downloadable: false
                 })
