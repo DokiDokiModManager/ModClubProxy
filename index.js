@@ -8,6 +8,67 @@ const app = express();
 
 const UA = "DDMM-ModClubProxy (zudo@doki.space)";
 
+/**
+ * Get the "direct" download URL for the mod
+ * @param url The URL to test
+ * @returns {string|null} The direct URL, or null
+ */
+function getDirectURL(url) {
+    const urlObj = new URL(url);
+    // direct google drive link already
+    if (urlObj.hostname === "drive.google.com" && urlObj.pathname === "/uc" && urlObj.searchParams.get("export") === "download") {
+        return url;
+        // possibly a gdrive link we can convert
+    } else if (urlObj.hostname === "drive.google.com") {
+        const match = /(?:\/file\/d\/([a-zA-Z0-9_\-]+))|(?:\/open\?id=([a-zA-Z0-9_\-]+))/.exec(url);
+        if (match) {
+            const fileID = match[1] || match[2];
+            return "https://drive.google.com/uc?id=" + fileID + "&export=download";
+        } else {
+            return null;
+        }
+        // a dropbox link
+    } else if (urlObj.hostname === "dropbox.com" || urlObj.hostname === "www.dropbox.com") {
+        if (urlObj.searchParams.get("dl") === "0") {
+            urlObj.searchParams.set("dl", "1");
+            return urlObj.href;
+        } else if (urlObj.searchParams.get("dl") === "1") {
+            return url;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Attempt to load the URL and see if we get a response
+ * @param url The URL
+ * @returns {Promise<unknown>} the direct download URL if applicable, otherwise null
+ */
+function testURL(url) {
+    const abc = new AbortController();
+    const timeout = setTimeout(() => abc.abort(), 5000);
+
+    return new Promise((resolve => {
+        fetch(url, {
+            method: "HEAD",
+            headers: {
+                "User-Agent": UA
+            },
+            signal: abc.signal
+        }).then(res2 => {
+            const type = res2.headers.get("content-type");
+
+            resolve(type.match(/^application\/.+/) ? url : getDirectURL(url));
+        }).catch(() => {
+            resolve(getDirectURL(url));
+        }).finally(() => {
+            clearTimeout(timeout);
+        });
+    }));
+}
+
+// CORS configuration
 app.use((request, response, next) => {
     response.set("Access-Control-Allow-Origin", "*");
     next();
@@ -26,30 +87,11 @@ app.get("/mod", (request, response) => {
         }
     }).then(res => res.json()).then(res => {
         if (res[0]) {
-            const abc = new AbortController();
-            const timeout = setTimeout(() => abc.abort(), 5000);
-            fetch(res[0].modUploadURL, {
-                method: "HEAD",
-                headers: {
-                    "User-Agent": UA
-                },
-                signal: abc.signal
-            }).then(res2 => {
-                const type = res2.headers.get("content-type");
-
+            testURL(res[0].modUploadURL).then(url => {
                 response.json({
-                    mod: res[0],
-                    type,
-                    downloadable: !!type.match(/^application\/.+/)
-                })
-            }).catch(() => {
-                response.json({
-                    mod: res[0],
-                    type: "unknown",
-                    downloadable: false
-                })
-            }).finally(() => {
-                clearTimeout(timeout);
+                    directDownload: url,
+                    mod: res[0]
+                });
             });
         } else {
             response.status(404).json({"error": "mod not found"});
